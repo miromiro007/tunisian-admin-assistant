@@ -1,0 +1,72 @@
+[
+  {
+    "id": "fr-1",
+    "language": "fr",
+    "question": "Avant quelle date l'employeur doit-il verser les cotisations dues pour le trimestre écoulé ?",
+    "keywords": ["quinzième jour"],
+    "note": "CNSS, art. 45, p.37"
+  },
+  {
+    "id": "fr-2",
+    "language": "fr",
+    "question": "Comment la cotisation du travailleur est-elle prélevée ?",
+    "keywords": ["précomptée d'office"],
+    "note": "CNSS, art. 43, p.37"
+  },
+  {
+    "id": "fr-3",
+    "language": "fr",
+    "question": "Quel est le taux de cotisation au titre du régime de base d'assurance maladie ?",
+    "keywords": ["6.75"],
+    "note": "loi 2004-71, art. 15, p.195"
+  },
+  {
+    "id": "fr-4",
+    "language": "fr",
+    "question": "À quel âge les mineurs peuvent-ils prendre leur retraite ?",
+    "keywords": ["55 ans pour les mineurs"],
+    "note": "arrêté du 4 juillet 1975, p.405"
+  },
+  {
+    "id": "fr-5",
+    "language": "fr",
+    "question": "Dans quel délai les allocations familiales doivent-elles être versées par la caisse nationale ?",
+    "keywords": ["45 jours"],
+    "note": "CNSS, art. 65, p.46"
+  },
+  {
+    "id": "ar-1",
+    "language": "ar",
+    "question": "ما هي أقصى مدة للتجربة بالنسبة للعمال الفلاحيين؟",
+    "keywords": ["التجربة", "ثلاثين يوما"],
+    "note": "Code du travail, p.117"
+  },
+  {
+    "id": "ar-2",
+    "language": "ar",
+    "question": "ما هو مقدار التعويض في حالة الطرد التعسفي؟",
+    "keywords": ["أجر شهرين"],
+    "note": "Code du travail, p.19"
+  },
+  {
+    "id": "ar-3",
+    "language": "ar",
+    "question": "كم تبلغ مدة الراحة السنوية للعملة الذين يقل سنهم عن ثمانية عشر عاما؟",
+    "keywords": ["يومين عن كل شهر"],
+    "note": "Code du travail, p.49"
+  },
+  {
+    "id": "ar-4",
+    "language": "ar",
+    "question": "كم ساعة في اليوم يمكن تشغيل طفل دون السادسة عشرة في أعمال خفيفة؟",
+    "keywords": ["ساعتين في اليوم"],
+    "note": "Code du travail, p.28"
+  },
+  {
+    "id": "ar-5",
+    "language": "ar",
+    "question": "ما هي نسبة الزيادة في أجر الساعات الإضافية لنظام عمل كامل الوقت 48 ساعة في الأسبوع؟",
+    "keywords": ["48 ساعة", "75"],
+    "note": "Code du travail, p.40"
+  }
+]
