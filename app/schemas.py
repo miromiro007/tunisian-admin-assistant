@@ -2,8 +2,9 @@
 
 Pydantic validates incoming JSON automatically and documents it in /docs.
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Literal
+from app.ingestion.configs import CONFIGS, DEFAULT_CONFIG
 
 
 
@@ -64,6 +65,39 @@ class AnalyzeResponse(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     latency_ms: int
+
+class SearchRequest(BaseModel):
+    """Body of POST /search."""
+
+    question: str = Field(min_length=3, max_length=1000)
+    top_k: int = Field(default=5, ge=1, le=20)
+    chunk_config: str = DEFAULT_CONFIG
+    language: Literal["fr", "ar"] | None = None  # None = search in both languages
+
+    @field_validator("chunk_config")
+    @classmethod
+    def chunk_config_must_exist(cls, value: str) -> str:
+        if value not in CONFIGS:
+            raise ValueError(f"unknown chunk_config '{value}', choose one of {list(CONFIGS)}")
+        return value
+
+
+class SearchHitResponse(BaseModel):
+    """One chunk returned by the search (also the future citation)."""
+
+    score: float
+    document: str
+    page: int | None
+    article: str | None
+    language: str
+    chunk_config: str
+    content: str
+
+
+class SearchResponse(BaseModel):
+    question: str
+    chunk_config: str
+    hits: list[SearchHitResponse]
 
 
 
