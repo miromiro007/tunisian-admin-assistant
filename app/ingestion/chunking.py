@@ -3,6 +3,9 @@
 Two strategies:
   - chunk_by_article: one chunk per legal article ("Article 12", "الفصل 12")
   - chunk_fixed_size: fixed-size windows with overlap (fallback for text without articles)
+
+Every chunk remembers `start`: the character position where it begins in the text it was
+cut from. The pipeline uses it to find the PAGE of each chunk (needed for citations).
 """
 import re
 from dataclasses import dataclass, field
@@ -16,11 +19,12 @@ class Chunk:
     """
 
     text: str                    # the chunk content
-    document: str                # source document name, e.g. "code_du_travail.pdf"
+    document: str                # source document name, e.g. "code_du_travail_ar_2004.pdf"
     page: int | None = None      # page number where the chunk starts (None if unknown)
     article: str | None = None   # article label, e.g. "12" (None for non-article chunks)
     language: str = "fr"         # "fr" or "ar"
     metadata: dict = field(default_factory=dict)  # room for extra info later
+    start: int = 0               # position of the chunk in the text it was cut from
 
 
 # Detects the START of an article, at the beginning of a line.
@@ -45,8 +49,8 @@ def chunk_by_article(
     """Split text into one chunk per article.
 
     If an article is longer than max_chars, it is split further with a fixed-size window
-    (the article label is kept on each piece). Text before the first article is kept as a
-    chunk without an article label (title, preamble).
+    (the article label is kept on each piece). Text before the first article is kept as
+    chunks without an article label (title, preamble).
     """
     matches = list(ARTICLE_PATTERN.finditer(text))
     if not matches:
@@ -56,24 +60,26 @@ def chunk_by_article(
     chunks: list[Chunk] = []
 
     # 1) Preamble: everything before the first article.
-    preamble = text[: matches[0].start()].strip()
-    if preamble:
+    preamble = text[: matches[0].start()]
+    if preamble.strip():
         chunks.extend(chunk_fixed_size(preamble, document, page, language, max_chars, overlap))
 
     # 2) Each article goes from its own start to the start of the next article.
     for i, match in enumerate(matches):
-        start = match.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        article_text = text[start:end].strip()
-        label = re.sub(r"\s+", " ", match.group(1)).strip()  # normalize spaces: "12  bis" -> "12 bis"
+        raw = text[match.start() : end]
+        article_text = raw.strip()
+        # Position of the first real character (the match may begin with spaces).
+        article_start = match.start() + (len(raw) - len(raw.lstrip()))
+        label = re.sub(r"\s+", " ", match.group(1)).strip()  # normalize: "12  bis" -> "12 bis"
 
         if len(article_text) <= max_chars:
-            chunks.append(Chunk(article_text, document, page, label, language))
+            chunks.append(Chunk(article_text, document, page, label, language, start=article_start))
         else:
             # Very long article: split it, keep the same article label on every piece.
             for piece in chunk_fixed_size(article_text, document, page, language, max_chars, overlap):
                 chunks.append(
-                    Chunk(piece.text, document, page, label, language)
+                    Chunk(piece.text, document, page, label, language, start=article_start + piece.start)
                 )
     return chunks
 
@@ -94,15 +100,18 @@ def chunk_fixed_size(
     if overlap >= chunk_size:
         raise ValueError("overlap must be smaller than chunk_size")
 
-    text = text.strip()
+    stripped = text.strip()
+    lead = len(text) - len(text.lstrip())  # characters removed at the beginning
     chunks: list[Chunk] = []
     step = chunk_size - overlap  # how far the window moves each time
     start = 0
-    while start < len(text):
-        piece = text[start : start + chunk_size].strip()
+    while start < len(stripped):
+        window = stripped[start : start + chunk_size]
+        piece = window.strip()
         if piece:  # never keep an empty chunk (embedding an empty string would fail later)
-            chunks.append(Chunk(piece, document, page, None, language))
-        if start + chunk_size >= len(text):
+            offset = lead + start + (len(window) - len(window.lstrip()))
+            chunks.append(Chunk(piece, document, page, None, language, start=offset))
+        if start + chunk_size >= len(stripped):
             break  # last window reached the end
         start += step
     return chunks
