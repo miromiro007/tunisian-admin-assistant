@@ -1,24 +1,4 @@
-## What I learned (Week 1)
-
-- **Tokens:** LLMs read tokens, not words. Arabic cost ~2.8x more tokens than English
-  for the same sentence (25 vs 9), which impacts cost and context window.
-- **Context window:** shared by prompt and answer; LLMs are stateless, so history
-  must be resent on every request.
-- **Temperature:** 0 gave identical outputs; 1.2 gave varied (and riskier) ones.
-  I use low values for factual/admin tasks.
-- **Prompts:** system role (developer rules) vs user role; few-shot examples
-  improve format consistency.
-- **Structured output:** JSON schema + Pydantic validation; never trust LLM output.
-- **Local vs API:** Qwen 7B (private, free, ~25 tok/s) vs gpt-oss-120b on Groq
-  (~240 tok/s, richer answers, rate limits, data leaves the machine).
-- **Design:** provider abstraction (abstract class + factory) so adding a provider
-  needs one new class. Model names live in config because Groq retired a model
-  during the project.
-- **Hallucinations:** both models gave plausible but unverified legal details,
-  which is why the next phase uses RAG with cited sources.
-- **Docker:** Compose services reach each other by service name; secrets are injected
-  at runtime, never baked into the image.
-  # Tunisian Admin Assistant
+# Tunisian Admin Assistant
 
 A learning project: an AI assistant for Tunisian administrative questions (labor law, CNSS
 social security, company creation), built step by step as a RAG (Retrieval-Augmented
@@ -68,31 +48,31 @@ tests/                 pytest suite
 1. **Configuration.** Copy `.env.example` to `.env` and set your own values
    (database password, optional `GROQ_API_KEY`). Never commit `.env`.
 2. **Start the services.**
-```bat
+   ```bat
    docker compose up -d --build
    docker compose exec ollama ollama pull bge-m3
-```
+   ```
 3. **Add the documents.** The PDFs are not in the repository. Put them in `data/raw/`,
    named `<name>_<fr|ar>[_year].pdf` (the language is read from the file name).
 4. **Python environment** (for the scripts and the tests).
-```bat
+   ```bat
    python -m venv .venv
    .venv\Scripts\activate
    pip install -r requirements-dev.txt
-```
+   ```
 5. **Ingest.** Safe to re-run: unchanged files are skipped, nothing is duplicated.
-```bat
+   ```bat
    python scripts/ingest.py
    python scripts/ingest.py --config fixed_500 fixed_1000
-```
+   ```
 6. **Search.** Open http://127.0.0.1:8000/docs and try `POST /search`, or from the command line:
-```bat
+   ```bat
    python scripts/search_demo.py "Quelles sont les cotisations CNSS ?" --language fr
-```
+   ```
 7. **Tests.**
-```bat
+   ```bat
    python -m pytest tests -v
-```
+   ```
    The repository tests need a separate PostgreSQL database: set `TEST_DATABASE_URL`
    to run them (they are skipped otherwise).
 
