@@ -15,6 +15,25 @@ services:
               capabilities: [gpu]
     restart: unless-stopped
 
+  db:
+    image: pgvector/pgvector:0.8.7-pg17   # official image: PostgreSQL 17 + pgvector 0.8.7
+    container_name: tunisian-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5433:5432"                        # host port 5433 avoids a clash with any local PostgreSQL on 5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data    # data survives container restarts
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # our schema, run on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build: .
     container_name: tunisian-api
@@ -23,8 +42,9 @@ services:
     env_file:
       - .env                     # secrets injected at runtime, not baked in the image
     environment:
-      # Overrides .env: inside Compose, Ollama is reached by SERVICE NAME.
+      # Overrides .env: inside Compose, other services are reached by SERVICE NAME.
       OLLAMA_BASE_URL: http://ollama:11434
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       - ollama
     healthcheck:
@@ -36,3 +56,4 @@ services:
 
 volumes:
   ollama_data:
+  pgdata:
