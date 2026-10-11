@@ -5,3 +5,4 @@ pydantic-settings>=2.4,<3.0
 tiktoken>=0.8
 httpx>=0.2
 pymupdf
+psycopg[binary]>=3.2,<4.0
