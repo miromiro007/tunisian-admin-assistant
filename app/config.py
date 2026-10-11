@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     embedding_timeout_seconds: float = 120.0  # first call loads the model: can be slow
     embedding_max_retries: int = 3            # extra attempts after a temporary failure
 
+
+     # --- Database (PostgreSQL + pgvector) ---
+    # SecretStr: the URL contains the password, so it must never appear in logs.
+    database_url: SecretStr = SecretStr("")
+
     # Tell pydantic-settings where the .env file is and how to read it.
     # extra="ignore": unknown variables in .env do not crash the app.
     model_config = SettingsConfigDict(
