@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     groq_api_key: SecretStr = SecretStr("")
     groq_model: str = "llama-3.3-70b-versatile"
 
+    # --- Embeddings (Week 2) ---
+    embedding_provider: str = "ollama"        # which implementation to use
+    embedding_model: str = "bge-m3"
+    embedding_dimensions: int = 1024          # must match the vector(1024) column
+    embedding_batch_size: int = 32            # texts sent to the model per request
+    embedding_timeout_seconds: float = 120.0  # first call loads the model: can be slow
+    embedding_max_retries: int = 3            # extra attempts after a temporary failure
+
     # Tell pydantic-settings where the .env file is and how to read it.
     # extra="ignore": unknown variables in .env do not crash the app.
     model_config = SettingsConfigDict(
