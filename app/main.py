@@ -32,6 +32,8 @@ from app.schemas import (
 from app.search import SearchHit, search_chunks
 from fastapi.responses import StreamingResponse
 
+from fastapi.middleware.cors import CORSMiddleware
+
 settings = get_settings()
 setup_logging(settings.log_level)
 logger = logging.getLogger(__name__)
@@ -50,6 +52,13 @@ app = FastAPI(
     version="0.4.0",
     description="Tunisian administrative assistant (LLM foundations, semantic search, grounded answers).",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 

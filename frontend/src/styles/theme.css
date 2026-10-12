@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/* Latin + Arabic weights actually used by the UI. */
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/500.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: "Cairo", ui-sans-serif, system-ui, sans-serif;
+
+  /* One accent color: deep teal. */
+  --color-accent-50: oklch(97% 0.02 195);
+  --color-accent-100: oklch(93% 0.05 195);
+  --color-accent-300: oklch(78% 0.09 195);
+  --color-accent-500: oklch(58% 0.1 195);
+  --color-accent-600: oklch(50% 0.095 195);
+  --color-accent-700: oklch(42% 0.085 195);
+}
+
+:root {
+  --color-bg: oklch(99% 0.002 240);
+  --color-surface: oklch(100% 0 0);
+  --color-surface-muted: oklch(97% 0.003 240);
+  --color-border: oklch(90% 0.004 240);
+  --color-text: oklch(22% 0.01 240);
+  --color-text-muted: oklch(48% 0.01 240);
+}
+
+.dark {
+  --color-bg: oklch(17% 0.01 240);
+  --color-surface: oklch(21% 0.01 240);
+  --color-surface-muted: oklch(24% 0.012 240);
+  --color-border: oklch(30% 0.012 240);
+  --color-text: oklch(94% 0.004 240);
+  --color-text-muted: oklch(68% 0.008 240);
+}
+
+html,
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+:lang(ar) {
+  font-family: var(--font-arabic);
+  line-height: 1.9;
+}
+
+/* Lets mixed French/Arabic/citation-marker runs keep their own direction
+   instead of the whole block flipping based on the first character. */
+.bidi-plaintext {
+  unicode-bidi: plaintext;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

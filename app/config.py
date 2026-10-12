@@ -51,6 +51,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+        
+    # --- Web UI (Week 3) ---
+    # Origins allowed to call the API from a browser (CORS). Override with a JSON list in .env.
+    cors_origins: list[str] = ["http://127.0.0.1:5173", "http://localhost:5173"]
+
 
 @lru_cache
 def get_settings() -> Settings:
