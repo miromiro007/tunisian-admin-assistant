@@ -16,6 +16,8 @@ class KeywordHit:
     document: str
     page: int | None
     article: str | None
+    language: str
+    law_title: str | None
     content: str
 
 
@@ -31,10 +33,11 @@ WITH q AS (
     SELECT replace(plainto_tsquery(%s::regconfig, %s)::text, '&', '|')::tsquery AS query
 )
 SELECT c.id, ts_rank_cd(c.ts, q.query) AS score,
-       d.name, c.page, c.article, c.content
+       d.name, c.page, c.article, c.language, c.law_title, c.content
 FROM chunks c
 JOIN documents d ON d.id = c.document_id, q
 WHERE c.chunk_config = %s
+  AND (%s::text IS NULL OR c.language = %s::text)
   AND c.ts @@ q.query
 ORDER BY score DESC
 LIMIT %s
@@ -47,15 +50,17 @@ def keyword_search(
     *,
     chunk_config: str,
     top_k: int = 5,
+    language: str | None = None,
 ) -> list[KeywordHit]:
     """Return the top_k chunks that share the most words with the question."""
     rows = connection.execute(
-        KEYWORD_SQL, (query_config(question), question, chunk_config, top_k)
+        KEYWORD_SQL,
+        (query_config(question), question, chunk_config, language, language, top_k),
     ).fetchall()
     return [
         KeywordHit(
-            id=row[0], score=float(row[1]), document=row[2],
-            page=row[3], article=row[4], content=row[5],
+            id=row[0], score=float(row[1]), document=row[2], page=row[3],
+            article=row[4], language=row[5], law_title=row[6], content=row[7],
         )
         for row in rows
     ]
