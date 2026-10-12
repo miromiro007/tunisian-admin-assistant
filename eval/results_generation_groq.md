@@ -6,8 +6,8 @@ top_k=5 min_score=0.5 runs=2
 
 | run | facts in answer | cited source supports | in-scope refused | out-of-scope refused | fake citations | errors |
 |---:|---:|---:|---:|---:|---:|---:|
-| 1 | 7/10 | 10/10 | 0/10 | 6/6 | 0 | 0 |
-| 2 | 7/10 | 10/10 | 0/10 | 6/6 | 0 | 0 |
+| 1 | 8/10 | 10/10 | 0/10 | 6/6 | 0 | 0 |
+| 2 | 8/10 | 10/10 | 0/10 | 6/6 | 0 | 0 |
 
 ## Per question (one outcome per run)
 
@@ -16,7 +16,7 @@ top_k=5 min_score=0.5 runs=2
 | fr-1 | fact | fact |
 | fr-2 | fact | fact |
 | fr-3 | fact | fact |
-| fr-4 | no-fact | no-fact |
+| fr-4 | fact | fact |
 | fr-5 | fact | fact |
 | ar-1 | no-fact | no-fact |
 | ar-2 | fact | fact |
