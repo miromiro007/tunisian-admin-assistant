@@ -126,3 +126,8 @@ class LLMProvider(ABC):
             completion_tokens=result.completion_tokens,
             latency_ms=latency_ms,
         )
+    async def complete_messages(
+        self, messages: list[dict[str, str]], temperature: float
+    ) -> Completion:
+        """Public entry point for services (like RAG) that build their own messages."""
+        return await self._complete(messages, temperature)  
