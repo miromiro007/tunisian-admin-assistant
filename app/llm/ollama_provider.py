@@ -4,6 +4,12 @@ from typing import Any
 from app.config import get_settings
 from app.llm.base import Completion, LLMProvider
 
+# Context window requested from Ollama (prompt + answer, in tokens).
+# Without it, Ollama uses a small default and silently drops the start of long prompts.
+# 8192 tokens costs roughly 0.5 GB of extra VRAM for qwen2.5:7b.
+# TODO: move to Settings (app/config.py) once we have seen that file.
+OLLAMA_NUM_CTX = 8192
+
 
 class OllamaProvider(LLMProvider):
     name = "ollama"
@@ -25,7 +31,7 @@ class OllamaProvider(LLMProvider):
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "options": {"temperature": temperature},
+            "options": {"temperature": temperature, "num_ctx": OLLAMA_NUM_CTX},
         }
         if json_schema:
             payload["format"] = json_schema  # Ollama: full JSON Schema
