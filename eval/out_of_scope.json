@@ -1,0 +1,8 @@
+[
+  {"id": "oos-fr-1", "language": "fr", "question": "Quel est le taux de TVA en Tunisie ?"},
+  {"id": "oos-fr-2", "language": "fr", "question": "Comment renouveler mon passeport tunisien ?"},
+  {"id": "oos-fr-3", "language": "fr", "question": "Quel est le prix du carburant en Tunisie ?"},
+  {"id": "oos-ar-1", "language": "ar", "question": "ما هي نسبة الأداء على القيمة المضافة في تونس؟"},
+  {"id": "oos-ar-2", "language": "ar", "question": "كيف أجدد جواز السفر التونسي؟"},
+  {"id": "oos-ar-3", "language": "ar", "question": "ما هو سعر البنزين في تونس؟"}
+]
