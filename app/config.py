@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     # SecretStr: the URL contains the password, so it must never appear in logs.
     database_url: SecretStr = SecretStr("")
 
+
+        # --- RAG (Week 3) ---
+    rag_top_k: int = 5                  # sources given to the model
+    rag_min_score: float = 0.5          # below this best score, refuse without calling the LLM
+    rag_max_context_tokens: int = 3000  # token budget for the sources
+
     # Tell pydantic-settings where the .env file is and how to read it.
     # extra="ignore": unknown variables in .env do not crash the app.
     model_config = SettingsConfigDict(

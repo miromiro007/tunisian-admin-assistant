@@ -119,6 +119,7 @@ async def generate_answer(
     raw = completion.text.strip()
 
     if NO_ANSWER_MARKER in raw:
+        logger.info("model declined, raw output: %r", raw[:300])
         return _refusal(
             language, "model_declined", context.sources, started,
             completion.prompt_tokens, completion.completion_tokens,

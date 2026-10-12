@@ -100,6 +100,66 @@ class SearchResponse(BaseModel):
     hits: list[SearchHitResponse]
 
 
+class AskRequest(BaseModel):
+    """Body of POST /ask."""
+
+    question: str = Field(min_length=3, max_length=1000)
+    top_k: int = Field(default=5, ge=1, le=10)
+    chunk_config: str = DEFAULT_CONFIG
+    language: Literal["fr", "ar"] | None = None  # None = search in both languages
+    provider: Literal["ollama", "groq"] = "ollama"
+
+    @field_validator("chunk_config")
+    @classmethod
+    def chunk_config_must_exist(cls, value: str) -> str:
+        if value not in CONFIGS:
+            raise ValueError(f"unknown chunk_config '{value}', choose one of {list(CONFIGS)}")
+        return value
+
+
+class SourceResponse(BaseModel):
+    """One source shown to the model. `cited` is True if the answer cites it."""
+
+    number: int                  # the [n] used in the answer
+    chunk_id: int | None
+    document: str
+    law_title: str | None
+    article: str | None
+    page: int | None
+    language: str
+    score: float                 # cosine similarity of the retrieval
+    excerpt: str                 # first characters of the chunk, for display
+    cited: bool
+
+
+class TimingsResponse(BaseModel):
+    """Time spent in each stage, in milliseconds."""
+
+    embed_ms: int
+    retrieval_ms: int
+    generation_ms: int
+    total_ms: int
+
+
+class AskResponse(BaseModel):
+    """Body returned by POST /ask."""
+
+    question: str
+    answer: str
+    refused: bool
+    refusal_reason: str | None   # no_sources | below_threshold | model_declined | empty_answer
+    language: str                # language of the answer: "fr" or "ar"
+    best_score: float | None     # best retrieval score (explains a refusal)
+    citations: list[SourceResponse]   # only the sources the answer cites
+    sources: list[SourceResponse]     # every source shown to the model
+    invalid_citations: list[int]      # [n] the model wrote that match no source
+    provider: str
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    timings: TimingsResponse
+
+
 
 
 
