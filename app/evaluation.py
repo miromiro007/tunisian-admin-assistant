@@ -3,12 +3,21 @@
 Ground truth is simple: for each test question we list words that MUST appear in the
 right chunk. A search "hits at rank r" if the r-th result contains all of them.
 """
+import re
 import unicodedata
 
 
+ARABIC_MARKS = re.compile(r"[\u064b-\u0652\u0670\u0640]")  # diacritics (tanwin, shadda...) and tatweel
+
 def normalize(text: str) -> str:
-    """Unicode NFKC, lower case, single spaces: '55  ans' matches '55 ans'."""
-    return " ".join(unicodedata.normalize("NFKC", text).lower().split())
+    """Unicode NFKC, lower case, single spaces, straight quotes, no Arabic diacritics.
+
+    '55  ans' matches '55 ans', "d’office" matches "d'office", and "يوماً" matches "يوما".
+    """
+    text = unicodedata.normalize("NFKC", text).lower()
+    text = text.replace("\u2019", "'").replace("\u2018", "'")
+    text = ARABIC_MARKS.sub("", text)
+    return " ".join(text.split())
 
 
 def _contains(text: str, keyword: str) -> bool:

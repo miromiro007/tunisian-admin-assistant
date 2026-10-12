@@ -26,7 +26,7 @@
     "id": "fr-4",
     "language": "fr",
     "question": "À quel âge les mineurs peuvent-ils prendre leur retraite ?",
-    "keywords": ["55 ans pour les mineurs"],
+    "keywords": ["55 ans", "mineurs"],
     "note": "arrêté du 4 juillet 1975, p.405"
   },
   {
@@ -40,7 +40,7 @@
     "id": "ar-1",
     "language": "ar",
     "question": "ما هي أقصى مدة للتجربة بالنسبة للعمال الفلاحيين؟",
-    "keywords": ["التجربة", "ثلاثين يوما"],
+    "keywords": ["التجربة", "ثلاثين يوما|ثلاثون يوما|ثلاثين يوماً|ثلاثون يوماً"],
     "note": "Code du travail, p.117"
   },
   {
