@@ -17,7 +17,9 @@
     "id": "fr-3",
     "language": "fr",
     "question": "Quel est le taux de cotisation au titre du régime de base d'assurance maladie ?",
-    "keywords": ["6.75"],
+    "keywords": [
+      "6.75|6,75"
+    ],
     "note": "loi 2004-71, art. 15, p.195"
   },
   {

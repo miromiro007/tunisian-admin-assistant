@@ -11,12 +11,19 @@ def normalize(text: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", text).lower().split())
 
 
+def _contains(text: str, keyword: str) -> bool:
+    """True if text contains the keyword. 'a|b' means: a OR b (e.g. '6.75|6,75')."""
+    return any(normalize(option) in text for option in keyword.split("|"))
+
+
 def first_hit_rank(contents: list[str], keywords: list[str]) -> int | None:
-    """1-based rank of the first chunk containing ALL keywords, or None if no chunk does."""
-    wanted = [normalize(keyword) for keyword in keywords]
+    """1-based rank of the first chunk containing ALL keywords, or None if no chunk does.
+
+    Each keyword may list alternatives separated by '|': the chunk needs any one of them.
+    """
     for rank, content in enumerate(contents, start=1):
         text = normalize(content)
-        if all(keyword in text for keyword in wanted):
+        if all(_contains(text, keyword) for keyword in keywords):
             return rank
     return None
 
