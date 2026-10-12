@@ -2,7 +2,8 @@
 import logging
 import re
 import time
-from dataclasses import dataclass
+from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
 
 from app.llm.base import LLMProvider
 from app.rag.context import ARABIC_LETTERS, DEFAULT_MAX_TOKENS, ContextSource, build_context
@@ -36,6 +37,16 @@ class RagAnswer:
     prompt_tokens: int
     completion_tokens: int
     latency_ms: int
+
+
+@dataclass(frozen=True)
+class StreamEvent:
+    """One event of a streamed generation: 'sources', 'token' or 'final'."""
+
+    kind: str
+    text: str = ""                                            # for 'token'
+    sources: list[ContextSource] = field(default_factory=list)  # for 'sources'
+    answer: RagAnswer | None = None                           # for 'final' (the source of truth)
 
 
 def detect_language(question: str) -> str:
@@ -86,6 +97,41 @@ def _refusal(
     )
 
 
+def _early_refusal(
+    language: str, hits: list[SearchHit], min_score: float | None, started: float
+) -> RagAnswer | None:
+    """Refusals decided BEFORE calling the LLM (no hits, or best score too low)."""
+    if not hits:
+        return _refusal(language, "no_sources", [], started)
+    if min_score is not None and hits[0].score < min_score:
+        logger.info("refused before the LLM: best score %.3f < %.3f", hits[0].score, min_score)
+        return _refusal(language, "below_threshold", [], started)
+    return None
+
+
+def _finalize(
+    raw: str, language: str, sources: list[ContextSource], started: float,
+    prompt_tokens: int, completion_tokens: int,
+) -> RagAnswer:
+    """Check the complete LLM output. Shared by the normal and the streaming path."""
+    if NO_ANSWER_MARKER in raw:
+        logger.info("model declined, raw output: %r", raw[:300])
+        return _refusal(language, "model_declined", sources, started, prompt_tokens, completion_tokens)
+    if not has_answer_text(raw):
+        logger.warning("empty answer (citation markers only): %r", raw[:80])
+        return _refusal(language, "empty_answer", sources, started, prompt_tokens, completion_tokens)
+
+    valid, invalid = parse_citations(raw, len(sources))
+    if invalid:
+        logger.warning("fake citations %s (only %d sources)", invalid, len(sources))
+    return RagAnswer(
+        answer=raw, refused=False, refusal_reason=None, language=language,
+        sources=sources, cited_numbers=valid, invalid_citations=invalid,
+        prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
+        latency_ms=int((time.perf_counter() - started) * 1000),
+    )
+
+
 async def generate_answer(
     provider: LLMProvider,
     question: str,
@@ -97,46 +143,83 @@ async def generate_answer(
 ) -> RagAnswer:
     """Answer the question from the hits, or refuse.
 
-    Refusal BEFORE the LLM (saves time and avoids a made-up answer):
-      - no hits at all
-      - best score below `min_score`
-    Refusal AFTER the LLM:
-      - the model answered exactly NO_ANSWER ("model_declined")
-      - the model answered with citation markers only ("empty_answer")
+    Refusal BEFORE the LLM: no hits, or best score below `min_score`.
+    Refusal AFTER the LLM: the model said NO_ANSWER, or answered with citation markers only.
     """
     started = time.perf_counter()
     language = detect_language(question)
 
-    if not hits:
-        return _refusal(language, "no_sources", [], started)
-    if min_score is not None and hits[0].score < min_score:
-        logger.info("refused before the LLM: best score %.3f < %.3f", hits[0].score, min_score)
-        return _refusal(language, "below_threshold", [], started)
+    early = _early_refusal(language, hits, min_score, started)
+    if early is not None:
+        return early
 
     context = build_context(hits, max_tokens=max_context_tokens)
     messages = build_messages(question, context.text, language)
     completion = await provider.complete_messages(messages, temperature)
-    raw = completion.text.strip()
-
-    if NO_ANSWER_MARKER in raw:
-        logger.info("model declined, raw output: %r", raw[:300])
-        return _refusal(
-            language, "model_declined", context.sources, started,
-            completion.prompt_tokens, completion.completion_tokens,
-        )
-    if not has_answer_text(raw):
-        logger.warning("empty answer (citation markers only): %r", raw[:80])
-        return _refusal(
-            language, "empty_answer", context.sources, started,
-            completion.prompt_tokens, completion.completion_tokens,
-        )
-
-    valid, invalid = parse_citations(raw, len(context.sources))
-    if invalid:
-        logger.warning("fake citations %s (only %d sources)", invalid, len(context.sources))
-    return RagAnswer(
-        answer=raw, refused=False, refusal_reason=None, language=language,
-        sources=context.sources, cited_numbers=valid, invalid_citations=invalid,
-        prompt_tokens=completion.prompt_tokens, completion_tokens=completion.completion_tokens,
-        latency_ms=int((time.perf_counter() - started) * 1000),
+    return _finalize(
+        completion.text.strip(), language, context.sources, started,
+        completion.prompt_tokens, completion.completion_tokens,
     )
+
+
+async def generate_answer_stream(
+    provider: LLMProvider,
+    question: str,
+    hits: list[SearchHit],
+    *,
+    min_score: float | None = None,
+    max_context_tokens: int = DEFAULT_MAX_TOKENS,
+    temperature: float = 0.0,
+) -> AsyncIterator[StreamEvent]:
+    """Same as generate_answer, but yields events while the model writes.
+
+    Events: 'sources' (once), 'token' (many), then 'final' (once, the validated result).
+    The first characters are HELD BACK until we know the model is not refusing, so the
+    user never sees "NO_ANSWER" appear letter by letter. The 'final' event is the truth:
+    if it says refused, the UI must replace whatever was streamed.
+    """
+    started = time.perf_counter()
+    language = detect_language(question)
+
+    early = _early_refusal(language, hits, min_score, started)
+    if early is not None:
+        yield StreamEvent("final", answer=early)
+        return
+
+    context = build_context(hits, max_tokens=max_context_tokens)
+    yield StreamEvent("sources", sources=context.sources)
+
+    messages = build_messages(question, context.text, language)
+    parts: list[str] = []
+    pending = ""          # text held back until we can tell if the model refuses
+    decided = False
+    declined = False
+    prompt_tokens = completion_tokens = 0
+
+    async for chunk in provider.stream_messages(messages, temperature):
+        if chunk.done:
+            prompt_tokens, completion_tokens = chunk.prompt_tokens, chunk.completion_tokens
+            continue
+        parts.append(chunk.text)
+        if decided:
+            if not declined:
+                yield StreamEvent("token", text=chunk.text)
+            continue
+        pending += chunk.text
+        head = pending.lstrip()
+        if len(head) >= len(NO_ANSWER_MARKER):
+            decided = True
+            declined = head.startswith(NO_ANSWER_MARKER)
+            if not declined:
+                yield StreamEvent("token", text=pending)
+            pending = ""
+
+    if not decided and pending.strip():
+        # Very short answer: too short to be the marker, so it can be shown.
+        yield StreamEvent("token", text=pending)
+
+    answer = _finalize(
+        "".join(parts).strip(), language, context.sources, started,
+        prompt_tokens, completion_tokens,
+    )
+    yield StreamEvent("final", answer=answer)

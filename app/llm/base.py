@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from app.llm.errors import LLMError
 from app.llm.prompts import ANALYZE_SYSTEM_PROMPT, SYSTEM_PROMPT
 from app.schemas import AnalyzeResponse, ChatResponse, QuestionAnalysis
+from collections.abc import AsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,15 @@ class Completion:
     text: str
     prompt_tokens: int
     completion_tokens: int
+
+@dataclass
+class StreamChunk:
+    """One piece of a streamed answer. The last chunk has done=True and carries the token counts."""
+
+    text: str
+    done: bool = False
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
 
 
 class LLMProvider(ABC):
@@ -130,4 +140,21 @@ class LLMProvider(ABC):
         self, messages: list[dict[str, str]], temperature: float
     ) -> Completion:
         """Public entry point for services (like RAG) that build their own messages."""
-        return await self._complete(messages, temperature)  
+        return await self._complete(messages, temperature)
+
+    async def stream_messages(
+        self, messages: list[dict[str, str]], temperature: float
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream the answer piece by piece.
+
+        Default: no real streaming. The whole answer comes as ONE chunk. Providers that
+        support streaming (Ollama) override this. It keeps Groq working unchanged.
+        """
+        completion = await self._complete(messages, temperature)
+        yield StreamChunk(completion.text)
+        yield StreamChunk(
+            "",
+            done=True,
+            prompt_tokens=completion.prompt_tokens,
+            completion_tokens=completion.completion_tokens,
+        )

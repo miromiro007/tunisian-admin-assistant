@@ -139,6 +139,7 @@ class TimingsResponse(BaseModel):
     retrieval_ms: int
     generation_ms: int
     total_ms: int
+    first_token_ms: int | None = None   # time until the first streamed token (None if not streamed)
 
 
 class AskResponse(BaseModel):

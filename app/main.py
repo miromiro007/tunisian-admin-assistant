@@ -2,6 +2,7 @@
 import logging
 import time
 from contextlib import asynccontextmanager
+import json
 
 import psycopg
 from fastapi import FastAPI, HTTPException
@@ -14,7 +15,7 @@ from app.embeddings.factory import get_embedding_provider
 from app.llm.errors import LLMError
 from app.llm.factory import get_provider
 from app.logging_config import setup_logging
-from app.rag.generation import RagAnswer, generate_answer
+from app.rag.generation import RagAnswer, generate_answer, generate_answer_stream
 from app.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
@@ -29,6 +30,7 @@ from app.schemas import (
     TimingsResponse,
 )
 from app.search import SearchHit, search_chunks
+from fastapi.responses import StreamingResponse
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -209,3 +211,92 @@ async def ask(request: AskRequest) -> AskResponse:
         result.invalid_citations, timings.total_ms,
     )
     return _build_ask_response(request.question, result, hits, provider.name, provider.model, timings)
+
+def _sse(event: str, data: dict) -> str:
+    """Format one Server-Sent Event: 'event:' line, 'data:' line, blank line."""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+@app.post("/ask/stream", tags=["rag"])
+async def ask_stream(request: AskRequest) -> StreamingResponse:
+    """Same as /ask, but the answer is streamed as Server-Sent Events.
+
+    Events: sources, token (many), done (full AskResponse), or error.
+    """
+    started = time.perf_counter()
+    logger.info(
+        "POST /ask/stream config=%s top_k=%d language=%s provider=%s question_chars=%d",
+        request.chunk_config, request.top_k, request.language, request.provider,
+        len(request.question),
+    )
+
+    # Errors BEFORE the first byte can still use real HTTP status codes.
+    try:
+        embedder = get_embedding_provider()
+        query_vector = await embedder.embed_query(request.question)
+    except EmbeddingError as exc:
+        raise HTTPException(status_code=getattr(exc, "status_code", 502), detail=str(exc))
+    embedded = time.perf_counter()
+
+    try:
+        hits = await run_in_threadpool(
+            _search_database, query_vector, request.chunk_config, request.top_k, request.language
+        )
+    except (psycopg.Error, RuntimeError):
+        logger.exception("Database error during /ask/stream")
+        raise HTTPException(status_code=503, detail="The database is not available.")
+    retrieved = time.perf_counter()
+
+    try:
+        provider = get_provider(request.provider)
+    except LLMError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=str(exc))
+
+    async def event_stream():
+        first_token: float | None = None
+        try:
+            async for event in generate_answer_stream(
+                provider, request.question, hits,
+                min_score=settings.rag_min_score,
+                max_context_tokens=settings.rag_max_context_tokens,
+            ):
+                if event.kind == "sources":
+                    items = [_to_source(s, False).model_dump() for s in event.sources]
+                    yield _sse("sources", {"sources": items})
+                elif event.kind == "token":
+                    if first_token is None:
+                        first_token = time.perf_counter()
+                    yield _sse("token", {"text": event.text})
+                elif event.kind == "final" and event.answer is not None:
+                    finished = time.perf_counter()
+                    timings = TimingsResponse(
+                        embed_ms=int((embedded - started) * 1000),
+                        retrieval_ms=int((retrieved - embedded) * 1000),
+                        generation_ms=int((finished - retrieved) * 1000),
+                        total_ms=int((finished - started) * 1000),
+                        first_token_ms=(
+                            int((first_token - started) * 1000) if first_token is not None else None
+                        ),
+                    )
+                    logger.info(
+                        "ask/stream done refused=%s reason=%s cited=%s total_ms=%d first_token_ms=%s",
+                        event.answer.refused, event.answer.refusal_reason,
+                        event.answer.cited_numbers, timings.total_ms, timings.first_token_ms,
+                    )
+                    body = _build_ask_response(
+                        request.question, event.answer, hits, provider.name, provider.model, timings
+                    )
+                    yield _sse("done", body.model_dump())
+        except LLMError as exc:
+            # The HTTP status is already sent: the error travels as an event.
+            yield _sse("error", {"status": exc.status_code, "detail": str(exc)})
+        except Exception:
+            logger.exception("Unexpected error while streaming /ask/stream")
+            yield _sse("error", {"status": 500, "detail": "Unexpected error."})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
