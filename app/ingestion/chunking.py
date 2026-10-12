@@ -17,7 +17,7 @@ class Chunk:
 
     frozen=True makes it immutable, like a C# record.
     """
-
+   
     text: str                    # the chunk content
     document: str                # source document name, e.g. "code_du_travail_ar_2004.pdf"
     page: int | None = None      # page number where the chunk starts (None if unknown)
@@ -25,16 +25,23 @@ class Chunk:
     language: str = "fr"         # "fr" or "ar"
     metadata: dict = field(default_factory=dict)  # room for extra info later
     start: int = 0               # position of the chunk in the text it was cut from
+    start: int = 0               # position of the chunk in the text it was cut from
+    law_title: str | None = None # law/section title from the page header (None if unknown)
 
 
 # Detects the START of an article, at the beginning of a line.
-#   French : "Article 12", "Article 12 bis", "Article premier", "Art. 12"
-#   Arabic : "الفصل 12", "الفصل الأول", "فصل 12"
+#   French : "Article 12", "Article 12 bis", "Article premier", "Art. 12", "Art.24.-"
+#   Arabic : "الفصل 12", "الفصل14" (no space), "الفصل الأول", "فصل 12"
 # (?m) = MULTILINE: ^ matches at the start of every line, not only the start of the text.
-# The captured group (1) is the article label (the number or word after "Article").
+# Two named groups, only one of them is filled:
+#   num  = a number; the space before it is OPTIONAL ("الفصل14", "Art.24")
+#   word = "premier" or an Arabic word; a space is REQUIRED so that "Articles",
+#          "فصول" or "فصلا" are not mistaken for headings.
+# [ \t]* is used instead of \s* so the match never starts on a previous empty line.
 ARTICLE_PATTERN = re.compile(
-    r"(?m)^\s*(?:Article|Art\.|الفصل|فصل)\s+"
-    r"(premier|\d+(?:\s*(?:bis|ter|quater))?|[\u0621-\u064A]+)"
+    r"(?m)^[ \t]*(?:Article|Art\.|الفصل|فصل)"
+    r"(?:[ \t]*(?P<num>\d+(?:[ \t]*(?:bis|ter|quater))?)"
+    r"|[ \t]+(?P<word>premier|[\u0621-\u064A]+))"
 )
 
 
@@ -71,7 +78,8 @@ def chunk_by_article(
         article_text = raw.strip()
         # Position of the first real character (the match may begin with spaces).
         article_start = match.start() + (len(raw) - len(raw.lstrip()))
-        label = re.sub(r"\s+", " ", match.group(1)).strip()  # normalize: "12  bis" -> "12 bis"
+        # Exactly one of the two groups is filled.
+        label = re.sub(r"\s+", " ", match.group("num") or match.group("word")).strip()
 
         if len(article_text) <= max_chars:
             chunks.append(Chunk(article_text, document, page, label, language, start=article_start))

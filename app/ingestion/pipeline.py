@@ -60,12 +60,28 @@ def page_index_at(page_starts: list[int], position: int) -> int:
     return bisect_right(page_starts, position) - 1
 
 
+def law_titles_by_page(pages: list[PageText]) -> list[str | None]:
+    """For each page, the last running header seen at or before it (carried forward).
+
+    Pages before the first header get None.
+    Example: headers [A, None, B, None] -> [A, A, B, B].
+    """
+    titles: list[str | None] = []
+    current: str | None = None
+    for page in pages:
+        if page.header:
+            current = page.header
+        titles.append(current)
+    return titles
+
+
 def make_chunks(pages: list[PageText], config: ChunkConfig) -> list[Chunk]:
-    """Cut the pages into chunks following `config`, and give each chunk its page number."""
+    """Cut the pages into chunks following `config`, and give each chunk its page and law title."""
     if not pages:
         return []
     document, language = pages[0].document, pages[0].language
     text, page_starts = build_text(pages)
+    titles = law_titles_by_page(pages)
 
     if config.strategy == "article":
         chunks = chunk_by_article(
@@ -78,10 +94,11 @@ def make_chunks(pages: list[PageText], config: ChunkConfig) -> list[Chunk]:
     else:
         raise ValueError(f"Unknown chunking strategy '{config.strategy}'.")
 
-    return [
-        replace(chunk, page=pages[page_index_at(page_starts, chunk.start)].page)
-        for chunk in chunks
-    ]
+    result: list[Chunk] = []
+    for chunk in chunks:
+        index = page_index_at(page_starts, chunk.start)
+        result.append(replace(chunk, page=pages[index].page, law_title=titles[index]))
+    return result
 
 
 async def ingest_document(
@@ -116,9 +133,10 @@ async def ingest_document(
     if not chunks:
         raise ValueError(f"No chunk produced for {path.name}. Is the PDF empty or a scan?")
     sizes = [len(chunk.text) for chunk in chunks]
+    with_title = sum(1 for chunk in chunks if chunk.law_title)
     logger.info(
-        "%s [%s]: %d pages -> %d chunks (min %d, max %d chars)",
-        path.name, config.name, len(pages), len(chunks), min(sizes), max(sizes),
+        "%s [%s]: %d pages -> %d chunks (min %d, max %d chars, %d with a law title)",
+        path.name, config.name, len(pages), len(chunks), min(sizes), max(sizes), with_title,
     )
 
     # Embed everything BEFORE touching the database: if Ollama fails, nothing is modified.
@@ -136,6 +154,7 @@ async def ingest_document(
             language=chunk.language,
             content=chunk.text,
             embedding=vector,
+            law_title=chunk.law_title,
         )
         for index, (chunk, vector) in enumerate(zip(chunks, vectors))
     ]

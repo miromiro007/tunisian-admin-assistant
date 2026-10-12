@@ -35,6 +35,7 @@ class ChunkRow:
     language: str
     content: str
     embedding: list[float]
+    law_title: str | None = None  # NEW: last in the list with a default, so old calls still work
 
 
 class ChunkRepository(Protocol):
@@ -126,13 +127,14 @@ class PostgresChunkRepository:
                     """
                     INSERT INTO chunks
                         (document_id, chunk_config, chunk_index, page, article,
-                         language, content, embedding)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::vector)
+                         law_title, language, content, embedding)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::vector)
                     """,
                     [
                         (
                             doc_id, chunk_config, row.chunk_index, row.page, row.article,
-                            row.language, row.content, to_vector_literal(row.embedding),
+                            row.law_title, row.language, row.content,
+                            to_vector_literal(row.embedding),
                         )
                         for row in rows
                     ],
