@@ -3,7 +3,9 @@ services:
     image: ollama/ollama:latest
     container_name: tunisian-ollama
     ports:
-      - "11435:11434"            # host 11435 -> container 11434 (avoids clash with your local Ollama)
+      - "127.0.0.1:11435:11434"  # host 11435 -> container 11434, reachable from this machine only
+    environment:
+      OLLAMA_KEEP_ALIVE: "24h"   # keep models in VRAM (default is 5 minutes -> 30 s cold start)
     volumes:
       - ollama_data:/root/.ollama  # keeps downloaded models
     deploy:
@@ -38,7 +40,7 @@ services:
     build: .
     container_name: tunisian-api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"    # reachable from this machine only
     env_file:
       - .env                     # secrets injected at runtime, not baked in the image
     environment:
