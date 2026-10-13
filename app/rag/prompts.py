@@ -16,9 +16,6 @@ SYSTEM_FR = (
     "Si une source la contient, réponds avec elle, même si elle est partielle.\n"
     "4. Réponds en français, de façon courte et précise. "
     "N'invente aucun chiffre, aucune date, aucun numéro d'article."
-    "Si la source précise un régime, une loi ou une date, mentionne-les dans la phrase. "
-    "N'invente aucun chiffre, aucune date, aucun numéro d'article.\n"
-    "5. Si la source précise un régime, une loi ou une date, mentionne-les dans la phrase."
 )
 
 SYSTEM_AR = (
