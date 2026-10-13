@@ -12,7 +12,7 @@ export function LangSwitch() {
   return (
     <fieldset
       aria-label={t("lang.switch")}
-      className="m-0 flex items-center gap-0.5 rounded-lg border-0 bg-(--color-surface-muted) p-0.5"
+      className="m-0 flex h-9 items-center gap-0.5 rounded-lg border border-(--color-border) bg-(--color-surface-muted) p-0.5"
     >
       {OPTIONS.map((option) => (
         <button
@@ -20,9 +20,9 @@ export function LangSwitch() {
           type="button"
           onClick={() => setLang(option.value)}
           aria-pressed={lang === option.value}
-          className={`rounded-md px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 ${
+          className={`flex h-full min-w-8 items-center justify-center rounded-md px-1.5 text-xs font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500 ${
             lang === option.value
-              ? "bg-(--color-surface) text-(--color-text) shadow-sm"
+              ? "bg-(--color-surface) text-(--color-text) shadow-soft"
               : "text-(--color-text-muted) hover:text-(--color-text)"
           }`}
         >

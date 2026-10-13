@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { BookOpen, ChevronDown, Clock, Cpu, Loader2 } from "lucide-react";
 import { buildValidCitationNumbers, parseCitationMarkers } from "../lib/citations";
 import { CitationChip } from "./CitationChip";
 import { SourceCard } from "./SourceCard";
@@ -43,33 +44,38 @@ export function MessageAnswer({
   const otherSources = sources.filter((s) => !s.cited);
 
   const handleCitationClick = (number: number) => {
+    if (otherSources.some((s) => s.number === number)) setShowOthers(true);
     setHighlighted(number);
-    document.getElementById(sourceElementId(turnId, number))?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
+    // Wait a frame so a just-expanded "other sources" list exists before scrolling.
+    requestAnimationFrame(() => {
+      document.getElementById(sourceElementId(turnId, number))?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     });
-    setTimeout(() => setHighlighted((cur) => (cur === number ? null : cur)), 2000);
+    setTimeout(() => setHighlighted((cur) => (cur === number ? null : cur)), 2200);
   };
 
   if (showWarmingUp && text.length === 0) {
     return (
-      <div className="rounded-xl border border-(--color-border) bg-(--color-surface) p-4">
-        <p className="text-sm text-(--color-text-muted)">{t("warming.message")}</p>
+      <div className="inline-flex items-center gap-2.5 rounded-full border border-(--color-border) bg-(--color-surface) px-3.5 py-2 text-sm text-(--color-text-muted) shadow-soft">
+        <Loader2 size={15} className="animate-spin text-accent-500" aria-hidden="true" />
+        <span aria-live="polite">{t("warming.message")}</span>
       </div>
     );
   }
 
   if (isStreaming && text.length === 0 && sources.length === 0) {
-    return <Skeleton />;
+    return <Skeleton label={t("answer.searching")} />;
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       {finalResponse?.refused ? (
         <RefusalCard reason={finalResponse.refusal_reason} />
       ) : (
         <p
-          className="bidi-plaintext text-[0.95rem] leading-relaxed text-(--color-text)"
+          className="bidi-plaintext whitespace-pre-wrap pt-1 text-[0.95rem] leading-7 text-(--color-text)"
           dir="auto"
           aria-live="polite"
         >
@@ -87,20 +93,26 @@ export function MessageAnswer({
       )}
 
       {sources.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <section className="flex flex-col gap-2.5" aria-label={t("sources.title")}>
           {citedSources.length > 0 && (
             <>
-              <p className="text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">
+              <h2 className="flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-(--color-text-muted)">
+                <BookOpen size={13} aria-hidden="true" />
                 {t("sources.title")}
-              </p>
-              {citedSources.map((source) => (
-                <SourceCard
-                  key={source.number}
-                  source={source}
-                  elementId={sourceElementId(turnId, source.number)}
-                  highlighted={highlighted === source.number}
-                />
-              ))}
+                <span className="rounded-full bg-(--color-surface-muted) px-1.5 py-px text-[0.65rem] tabular-nums">
+                  {citedSources.length}
+                </span>
+              </h2>
+              <div className="flex flex-col gap-2">
+                {citedSources.map((source) => (
+                  <SourceCard
+                    key={source.number}
+                    source={source}
+                    elementId={sourceElementId(turnId, source.number)}
+                    highlighted={highlighted === source.number}
+                  />
+                ))}
+              </div>
             </>
           )}
 
@@ -109,30 +121,45 @@ export function MessageAnswer({
               <button
                 type="button"
                 onClick={() => setShowOthers((v) => !v)}
-                className="flex items-center gap-1 text-xs font-medium text-(--color-text-muted) hover:text-(--color-text)"
+                className="inline-flex items-center gap-1.5 rounded-full border border-(--color-border) px-3 py-1 text-xs font-medium text-(--color-text-muted) transition-colors hover:border-(--color-border-strong) hover:text-(--color-text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
                 aria-expanded={showOthers}
               >
-                <ChevronDown size={14} className={`transition-transform ${showOthers ? "rotate-180" : ""}`} />
-                {t("sources.other")} ({otherSources.length})
+                <ChevronDown
+                  size={13}
+                  aria-hidden="true"
+                  className={`transition-transform duration-200 ${showOthers ? "rotate-180" : ""}`}
+                />
+                {t("sources.other")}
+                <span className="tabular-nums opacity-70">{otherSources.length}</span>
               </button>
-              {showOthers && (
-                <div className="mt-2 flex flex-col gap-2">
-                  {otherSources.map((source) => (
-                    <SourceCard
-                      key={source.number}
-                      source={source}
-                      elementId={sourceElementId(turnId, source.number)}
-                      highlighted={highlighted === source.number}
-                    />
-                  ))}
-                </div>
-              )}
+              <AnimatePresence initial={false}>
+                {showOthers && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-col gap-2 pt-2.5">
+                      {otherSources.map((source) => (
+                        <SourceCard
+                          key={source.number}
+                          source={source}
+                          elementId={sourceElementId(turnId, source.number)}
+                          highlighted={highlighted === source.number}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
-        </div>
+        </section>
       )}
 
-      {finalResponse && <TimingsFooter response={finalResponse} />}
+      {finalResponse && <MetaFooter response={finalResponse} />}
     </div>
   );
 }
@@ -142,35 +169,50 @@ function sourceElementId(turnId: string, number: number): string {
 }
 
 function Caret() {
-  return <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-accent-500 align-middle" aria-hidden="true" />;
+  return (
+    <span
+      className="ms-0.5 inline-block h-[1.1em] w-[2px] translate-y-[0.2em] animate-blink rounded-full bg-accent-500"
+      aria-hidden="true"
+    />
+  );
 }
 
-function Skeleton() {
+function Skeleton({ label }: { label: string }) {
   return (
-    <div className="flex flex-col gap-2" aria-hidden="true">
-      <div className="h-3.5 w-5/6 animate-pulse rounded bg-(--color-surface-muted)" />
-      <div className="h-3.5 w-full animate-pulse rounded bg-(--color-surface-muted)" />
-      <div className="h-3.5 w-2/3 animate-pulse rounded bg-(--color-surface-muted)" />
+    <div className="flex flex-col gap-3 pt-1.5">
+      <p aria-live="polite" className="text-xs text-(--color-text-muted)">
+        {label}
+      </p>
+      <div className="flex flex-col gap-2.5" aria-hidden="true">
+        <div className="skeleton-line h-3 w-11/12 animate-shimmer rounded-full" />
+        <div className="skeleton-line h-3 w-full animate-shimmer rounded-full" />
+        <div className="skeleton-line h-3 w-3/5 animate-shimmer rounded-full" />
+      </div>
     </div>
   );
 }
 
-function TimingsFooter({ response }: { response: AskResponse }) {
+function MetaFooter({ response }: { response: AskResponse }) {
   const { t } = useLang();
   const { timings } = response;
-  if (timings.first_token_ms == null) {
-    return (
-      <p className="text-xs text-(--color-text-muted)">
-        {(timings.total_ms / 1000).toFixed(1)}s
-      </p>
-    );
-  }
+  const timingsLine =
+    timings.first_token_ms == null
+      ? `${(timings.total_ms / 1000).toFixed(1)}s`
+      : t("timings.summary", {
+          first: (timings.first_token_ms / 1000).toFixed(1),
+          total: (timings.total_ms / 1000).toFixed(1),
+        });
+
   return (
-    <p className="text-xs text-(--color-text-muted)">
-      {t("timings.summary", {
-        first: (timings.first_token_ms / 1000).toFixed(1),
-        total: (timings.total_ms / 1000).toFixed(1),
-      })}
+    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem] text-(--color-text-muted)">
+      <span className="inline-flex items-center gap-1">
+        <Clock size={12} aria-hidden="true" />
+        {timingsLine}
+      </span>
+      <span className="inline-flex items-center gap-1" dir="ltr">
+        <Cpu size={12} aria-hidden="true" />
+        {response.provider} / {response.model}
+      </span>
     </p>
   );
 }

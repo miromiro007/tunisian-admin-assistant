@@ -6,7 +6,9 @@ type Dict = Record<string, string>;
 
 const fr: Dict = {
   "app.name": "Assistant Administratif Tunisien",
+  "app.tagline": "Code du travail · CNSS · Réponses sourcées",
   "app.newConversation": "Nouvelle conversation",
+  "answer.searching": "Recherche dans les documents…",
   "theme.toggle": "Changer de thème",
   "lang.switch": "Changer la langue",
   "input.placeholder": "Posez votre question sur le droit du travail ou la CNSS…",
@@ -21,6 +23,8 @@ const fr: Dict = {
   "sources.title": "Sources",
   "sources.other": "Autres sources consultées",
   "sources.score": "Score de pertinence",
+  "sources.showFull": "Afficher le texte complet",
+  "sources.hide": "Réduire",
   "refusal.title": "Aucune réponse trouvée dans les documents",
   "refusal.no_sources": "Aucun document pertinent n'a été trouvé pour cette question.",
   "refusal.below_threshold": "La question semble hors du champ des documents disponibles.",
@@ -37,7 +41,9 @@ const fr: Dict = {
 
 const ar: Dict = {
   "app.name": "المساعد الإداري التونسي",
+  "app.tagline": "مجلة الشغل · الضمان الاجتماعي · إجابات موثقة",
   "app.newConversation": "محادثة جديدة",
+  "answer.searching": "جاري البحث في الوثائق…",
   "theme.toggle": "تبديل المظهر",
   "lang.switch": "تغيير اللغة",
   "input.placeholder": "اطرح سؤالك حول قانون الشغل أو الصندوق القومي للضمان الاجتماعي…",
@@ -52,6 +58,8 @@ const ar: Dict = {
   "sources.title": "المصادر",
   "sources.other": "مصادر أخرى تم فحصها",
   "sources.score": "درجة الصلة",
+  "sources.showFull": "عرض النص الكامل",
+  "sources.hide": "تصغير",
   "refusal.title": "لم يتم العثور على إجابة في الوثائق",
   "refusal.no_sources": "لم يتم العثور على وثائق ذات صلة بهذا السؤال.",
   "refusal.below_threshold": "يبدو أن السؤال خارج نطاق الوثائق المتوفرة.",
@@ -68,7 +76,9 @@ const ar: Dict = {
 
 const en: Dict = {
   "app.name": "Tunisian Admin Assistant",
+  "app.tagline": "Labor code · CNSS · Sourced answers",
   "app.newConversation": "New conversation",
+  "answer.searching": "Searching the documents…",
   "theme.toggle": "Toggle theme",
   "lang.switch": "Switch language",
   "input.placeholder": "Ask about labor law or CNSS social security…",
@@ -83,6 +93,8 @@ const en: Dict = {
   "sources.title": "Sources",
   "sources.other": "Other sources considered",
   "sources.score": "Relevance score",
+  "sources.showFull": "Show full text",
+  "sources.hide": "Hide",
   "refusal.title": "No answer found in the documents",
   "refusal.no_sources": "No relevant documents were found for this question.",
   "refusal.below_threshold": "The question seems outside the available documents.",

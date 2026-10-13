@@ -1,3 +1,6 @@
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import { BrandMark } from "./BrandMark";
 import { useLang } from "../i18n";
 
 const FR_EXAMPLES = [
@@ -18,17 +21,24 @@ interface EmptyStateProps {
 
 export function EmptyState({ onPick }: EmptyStateProps) {
   const { t } = useLang();
+  const reduceMotion = useReducedMotion();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 text-center">
-      <div>
-        <h1 className="text-xl font-semibold text-(--color-text)">{t("empty.title")}</h1>
-        <p className="mt-1 text-sm text-(--color-text-muted)">{t("empty.subtitle")}</p>
-      </div>
+    <div className="mx-auto flex w-full max-w-[760px] flex-1 flex-col items-center justify-center gap-10 px-4 py-10 sm:py-16">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="flex flex-col items-center text-center"
+      >
+        <BrandMark size="lg" />
+        <h1 className="text-gradient mt-5 text-2xl font-semibold tracking-tight sm:text-3xl">{t("empty.title")}</h1>
+        <p className="mt-2 max-w-md text-sm leading-relaxed text-(--color-text-muted)">{t("empty.subtitle")}</p>
+      </motion.div>
 
-      <div className="grid w-full max-w-lg gap-4">
-        <ExampleGroup label={t("empty.examplesFr")} examples={FR_EXAMPLES} dir="ltr" onPick={onPick} />
-        <ExampleGroup label={t("empty.examplesAr")} examples={AR_EXAMPLES} dir="rtl" onPick={onPick} />
+      <div className="grid w-full gap-6 sm:grid-cols-2 sm:gap-4">
+        <ExampleGroup label={t("empty.examplesFr")} examples={FR_EXAMPLES} lang="fr" onPick={onPick} delay={0.1} />
+        <ExampleGroup label={t("empty.examplesAr")} examples={AR_EXAMPLES} lang="ar" onPick={onPick} delay={0.18} />
       </div>
     </div>
   );
@@ -37,32 +47,49 @@ export function EmptyState({ onPick }: EmptyStateProps) {
 function ExampleGroup({
   label,
   examples,
-  dir,
+  lang,
   onPick,
+  delay,
 }: {
   label: string;
   examples: string[];
-  dir: "ltr" | "rtl";
+  lang: "fr" | "ar";
   onPick: (q: string) => void;
+  delay: number;
 }) {
+  const reduceMotion = useReducedMotion();
+  const dir = lang === "ar" ? "rtl" : "ltr";
+
   return (
-    <div>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-(--color-text-muted)">{label}</p>
-      <div className="flex flex-col gap-2">
+    <motion.section
+      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut", delay }}
+      aria-label={label}
+    >
+      <p className="mb-2.5 px-1 text-[0.7rem] font-semibold uppercase tracking-wider text-(--color-text-muted)">
+        {label}
+      </p>
+      <ul className="flex flex-col gap-2">
         {examples.map((question) => (
-          <button
-            key={question}
-            type="button"
-            dir={dir}
-            lang={dir === "rtl" ? "ar" : "fr"}
-            onClick={() => onPick(question)}
-            className="rounded-xl border border-(--color-border) bg-(--color-surface) px-4 py-2.5 text-left text-sm text-(--color-text) transition-colors hover:border-accent-500 hover:bg-accent-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 dark:hover:bg-accent-700/10"
-            style={{ textAlign: dir === "rtl" ? "right" : "left" }}
-          >
-            {question}
-          </button>
+          <li key={question}>
+            <button
+              type="button"
+              dir={dir}
+              lang={lang}
+              onClick={() => onPick(question)}
+              className="group flex w-full items-start gap-3 rounded-xl border border-(--color-border) bg-(--color-surface) px-3.5 py-3 text-start text-sm leading-snug text-(--color-text) shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-300 hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 dark:hover:border-accent-700"
+            >
+              <span className="flex-1">{question}</span>
+              <ArrowUpRight
+                size={16}
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-(--color-text-muted) opacity-0 transition-all group-hover:text-accent-600 group-hover:opacity-100 group-focus-visible:opacity-100 rtl:-scale-x-100 dark:group-hover:text-accent-300"
+              />
+            </button>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </motion.section>
   );
 }

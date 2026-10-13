@@ -19,28 +19,57 @@
   /* One accent color: deep teal. */
   --color-accent-50: oklch(97% 0.02 195);
   --color-accent-100: oklch(93% 0.05 195);
+  --color-accent-200: oklch(87% 0.07 195);
   --color-accent-300: oklch(78% 0.09 195);
+  --color-accent-400: oklch(68% 0.1 195);
   --color-accent-500: oklch(58% 0.1 195);
   --color-accent-600: oklch(50% 0.095 195);
   --color-accent-700: oklch(42% 0.085 195);
+  --color-accent-800: oklch(34% 0.07 195);
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-blink: blink 1s steps(2, start) infinite;
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes blink {
+    to {
+      visibility: hidden;
+    }
+  }
 }
 
 :root {
-  --color-bg: oklch(99% 0.002 240);
+  --color-bg: oklch(98.6% 0.003 220);
   --color-surface: oklch(100% 0 0);
-  --color-surface-muted: oklch(97% 0.003 240);
-  --color-border: oklch(90% 0.004 240);
-  --color-text: oklch(22% 0.01 240);
-  --color-text-muted: oklch(48% 0.01 240);
+  --color-surface-muted: oklch(96.5% 0.004 220);
+  --color-border: oklch(91% 0.005 220);
+  --color-border-strong: oklch(85% 0.006 220);
+  --color-text: oklch(21% 0.012 230);
+  --color-text-muted: oklch(47% 0.012 230);
+  --color-glow: oklch(80% 0.09 195 / 0.35);
+  --shadow-soft: 0 1px 2px oklch(20% 0.02 230 / 0.04), 0 4px 16px -4px oklch(20% 0.02 230 / 0.08);
+  --shadow-lift: 0 2px 4px oklch(20% 0.02 230 / 0.04), 0 12px 32px -8px oklch(20% 0.02 230 / 0.14);
 }
 
 .dark {
-  --color-bg: oklch(17% 0.01 240);
-  --color-surface: oklch(21% 0.01 240);
-  --color-surface-muted: oklch(24% 0.012 240);
-  --color-border: oklch(30% 0.012 240);
-  --color-text: oklch(94% 0.004 240);
-  --color-text-muted: oklch(68% 0.008 240);
+  --color-bg: oklch(16% 0.008 230);
+  --color-surface: oklch(20% 0.01 230);
+  --color-surface-muted: oklch(23.5% 0.011 230);
+  --color-border: oklch(28% 0.012 230);
+  --color-border-strong: oklch(35% 0.014 230);
+  --color-text: oklch(95% 0.004 230);
+  --color-text-muted: oklch(70% 0.01 230);
+  --color-glow: oklch(50% 0.09 195 / 0.25);
+  --shadow-soft: 0 1px 2px oklch(0% 0 0 / 0.3), 0 4px 16px -4px oklch(0% 0 0 / 0.4);
+  --shadow-lift: 0 2px 4px oklch(0% 0 0 / 0.3), 0 12px 32px -8px oklch(0% 0 0 / 0.55);
 }
 
 html,
@@ -51,6 +80,14 @@ body {
 
 body {
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent-200);
+  color: var(--color-accent-800);
 }
 
 :lang(ar) {
@@ -62,6 +99,38 @@ body {
    instead of the whole block flipping based on the first character. */
 .bidi-plaintext {
   unicode-bidi: plaintext;
+}
+
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+.shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+
+/* Soft accent glow behind the top of the page. */
+.page-glow {
+  background:
+    radial-gradient(60% 50% at 50% 0%, var(--color-glow), transparent 70%),
+    radial-gradient(40% 30% at 85% 10%, oklch(75% 0.08 250 / 0.12), transparent 70%);
+}
+
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-muted) 0%,
+    var(--color-border) 50%,
+    var(--color-surface-muted) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-text) 30%, var(--color-accent-500));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

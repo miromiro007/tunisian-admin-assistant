@@ -5,7 +5,7 @@ import { Chat, type TurnViewModel } from "./components/Chat";
 import { InputDock } from "./components/InputDock";
 import { useAsk, type UseAskResult } from "./hooks/useAsk";
 import { useThemeState, ThemeContext } from "./hooks/useTheme";
-import { LangContext, loadStoredLang, storeLang, t as translate, useLang, type UiLang } from "./i18n";
+import { LangContext, loadStoredLang, storeLang, t as translate, type UiLang } from "./i18n";
 
 function snapshotTurn(id: string, ask: UseAskResult): TurnViewModel {
   return {
@@ -21,7 +21,6 @@ function snapshotTurn(id: string, ask: UseAskResult): TurnViewModel {
 }
 
 function AppInner() {
-  const { t } = useLang();
   const ask = useAsk();
   const [turns, setTurns] = useState<TurnViewModel[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
@@ -61,18 +60,13 @@ function AppInner() {
   const isEmpty = allTurns.length === 0;
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="relative isolate flex min-h-svh flex-col">
+      <div aria-hidden="true" className="page-glow pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px]" />
       <Header onNewConversation={handleNewConversation} canStartNew={!isEmpty} />
 
       {isEmpty ? <EmptyState onPick={handleAsk} /> : <Chat turns={allTurns} />}
 
       <InputDock onSubmit={handleAsk} onStop={ask.stop} isStreaming={ask.phase === "streaming"} />
-
-      <footer className="border-t border-(--color-border) px-4 py-2 text-center">
-        <p className="mx-auto max-w-[760px] text-[0.7rem] text-(--color-text-muted)">
-          {t("footer.disclaimer")}
-        </p>
-      </footer>
     </div>
   );
 }

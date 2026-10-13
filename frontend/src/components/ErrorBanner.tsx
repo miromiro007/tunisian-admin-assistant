@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RotateCw } from "lucide-react";
 import { useLang } from "../i18n";
 import type { ErrorKind } from "../hooks/useAsk";
 
@@ -13,15 +13,21 @@ export function ErrorBanner({ kind, onRetry }: ErrorBannerProps) {
     kind === "validation" ? "error.validation" : kind === "network" ? "error.network" : "error.serviceUnavailable";
 
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-red-300/50 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-950/30">
-      <AlertTriangle size={20} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-      <div className="flex-1">
-        <p className="text-sm text-red-800 dark:text-red-200">{t(messageKey)}</p>
+    <div
+      role="alert"
+      className="flex items-start gap-3.5 rounded-2xl border border-red-200 bg-red-50/80 p-4 shadow-soft dark:border-red-500/25 dark:bg-red-950/30"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300">
+        <AlertTriangle size={17} aria-hidden="true" />
+      </span>
+      <div className="flex-1 pt-0.5">
+        <p className="text-sm leading-relaxed text-red-900 dark:text-red-100">{t(messageKey)}</p>
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 rounded-lg border border-red-300 px-3 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-900/40"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-(--color-surface) px-3 py-1.5 text-xs font-semibold text-red-800 shadow-soft ring-1 ring-inset ring-red-200 transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:text-red-200 dark:ring-red-500/30 dark:hover:bg-red-900/40"
         >
+          <RotateCw size={13} aria-hidden="true" />
           {t("error.retry")}
         </button>
       </div>
