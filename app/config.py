@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     rag_top_k: int = 5                  # sources given to the model
     rag_min_score: float = 0.5          # below this best score, refuse without calling the LLM
     rag_max_context_tokens: int = 3000  # token budget for the sources
+    rag_warmup: bool = True             # warm the models at API startup (disable in tests or without Ollama)
 
     # Tell pydantic-settings where the .env file is and how to read it.
     # extra="ignore": unknown variables in .env do not crash the app.

@@ -1,12 +1,15 @@
 """FastAPI entry point. .NET equivalent: Program.cs."""
+import asyncio
+import json
 import logging
 import time
 from contextlib import asynccontextmanager
-import json
 
 import psycopg
 from fastapi import FastAPI, HTTPException
 from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from app.config import get_settings
 from app.db import connect
@@ -30,9 +33,7 @@ from app.schemas import (
     TimingsResponse,
 )
 from app.search import SearchHit, search_chunks
-from fastapi.responses import StreamingResponse
-
-from fastapi.middleware.cors import CORSMiddleware
+from app.warmup import warm_up_models
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -43,9 +44,12 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Code before `yield` runs at startup, code after it at shutdown."""
     logger.info("Starting %s (env=%s)", settings.app_name, settings.environment)
+    # Background task: the API accepts requests immediately, the models warm up meanwhile.
+    warmup_task = asyncio.create_task(warm_up_models()) if settings.rag_warmup else None
     yield
+    if warmup_task is not None:
+        warmup_task.cancel()
     logger.info("Shutting down %s", settings.app_name)
-
 
 app = FastAPI(
     title=settings.app_name,
