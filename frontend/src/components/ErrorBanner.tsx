@@ -10,7 +10,13 @@ interface ErrorBannerProps {
 export function ErrorBanner({ kind, onRetry }: ErrorBannerProps) {
   const { t } = useLang();
   const messageKey =
-    kind === "validation" ? "error.validation" : kind === "network" ? "error.network" : "error.serviceUnavailable";
+    kind === "validation"
+      ? "error.validation"
+      : kind === "rateLimit"
+        ? "error.rateLimit"
+        : kind === "network"
+          ? "error.network"
+          : "error.serviceUnavailable";
 
   return (
     <div

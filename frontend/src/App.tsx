@@ -5,6 +5,7 @@ import { Chat, type TurnViewModel } from "./components/Chat";
 import { InputDock } from "./components/InputDock";
 import { useAsk, type UseAskResult } from "./hooks/useAsk";
 import { useThemeState, ThemeContext } from "./hooks/useTheme";
+import { useProvider } from "./hooks/useProvider";
 import { LangContext, loadStoredLang, storeLang, t as translate, type UiLang } from "./i18n";
 
 function snapshotTurn(id: string, ask: UseAskResult): TurnViewModel {
@@ -22,6 +23,7 @@ function snapshotTurn(id: string, ask: UseAskResult): TurnViewModel {
 
 function AppInner() {
   const ask = useAsk();
+  const { provider, setProvider } = useProvider();
   const [turns, setTurns] = useState<TurnViewModel[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const idCounter = useRef(0);
@@ -32,7 +34,7 @@ function AppInner() {
     }
     const id = `turn-${idCounter.current++}`;
     setCurrentId(id);
-    ask.ask(question);
+    ask.ask(question, provider);
   };
 
   const handleNewConversation = () => {
@@ -62,11 +64,23 @@ function AppInner() {
   return (
     <div className="relative isolate flex min-h-svh flex-col">
       <div aria-hidden="true" className="page-glow pointer-events-none fixed inset-x-0 top-0 -z-10 h-[420px]" />
-      <Header onNewConversation={handleNewConversation} canStartNew={!isEmpty} />
+      <Header
+        onNewConversation={handleNewConversation}
+        canStartNew={!isEmpty}
+        provider={provider}
+        onProviderChange={setProvider}
+      />
 
-      {isEmpty ? <EmptyState onPick={handleAsk} /> : <Chat turns={allTurns} />}
+      {isEmpty ? (
+        <EmptyState onPick={handleAsk} />
+      ) : (
+        <Chat
+          turns={allTurns}
+          onSwitchToCloud={provider === "ollama" ? () => setProvider("groq") : undefined}
+        />
+      )}
 
-      <InputDock onSubmit={handleAsk} onStop={ask.stop} isStreaming={ask.phase === "streaming"} />
+      <InputDock onSubmit={handleAsk} onStop={ask.stop} isStreaming={ask.phase === "streaming"} provider={provider} />
     </div>
   );
 }

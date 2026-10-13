@@ -112,6 +112,32 @@ describe("toSSEEvent", () => {
   });
 });
 
+describe("Groq path: one big token", () => {
+  it("reassembles sources -> ONE large token -> done, delivered in small byte chunks", () => {
+    const bigText = "تُدفع الاشتراكات قبل اليوم الخامس عشر [1]. Les cotisations sont dues avant le 15 [2]. ".repeat(60);
+    const doneResponse = { answer: bigText, refused: false };
+    const wire =
+      sse("sources", { sources: [] }) + sse("token", { text: bigText }) + sse("done", doneResponse);
+    const bytes = new TextEncoder().encode(wire);
+
+    const decoder = createSSEDecoder();
+    let buffer = "";
+    const events: SSEEvent[] = [];
+    // 97-byte chunks: odd size, so Arabic multi-byte characters are regularly split mid-sequence.
+    for (let i = 0; i < bytes.length; i += 97) {
+      buffer += decoder.decodeChunk(bytes.slice(i, i + 97));
+      const { frames, remainder } = extractFrames(buffer);
+      buffer = remainder;
+      events.push(...frames.map(toSSEEvent));
+    }
+
+    expect(events.map((e) => e.type)).toEqual(["sources", "token", "done"]);
+    expect(events[1]).toEqual({ type: "token", text: bigText });
+    expect(events[2]).toMatchObject({ type: "done", response: { answer: bigText } });
+    expect(buffer).toBe("");
+  });
+});
+
 describe("refusal flow", () => {
   it("produces exactly sources then done(refused:true), with zero token events", () => {
     const refusedResponse = {

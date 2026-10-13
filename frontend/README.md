@@ -46,8 +46,13 @@ so the client reads the response body manually with `fetch` +
 Request body:
 
 ```json
-{ "question": "string, 3–1000 chars", "top_k": "1–10, optional", "language": "fr|ar, optional" }
+{ "question": "string, 3–1000 chars", "top_k": "1–10, optional", "language": "fr|ar, optional", "provider": "ollama|groq" }
 ```
+
+`provider` comes from the Local (Ollama) / Cloud (Groq) selector in the header
+(default Local, persisted in `localStorage`). The Groq path does not stream: it sends
+the whole answer as a single `token` event followed by `done`. The UI also copes with
+zero `token` events before `done`, showing a "writing the answer" placeholder.
 
 Each frame is `event: <name>\ndata: <json>\n\n`. Frames — and even individual
 multi-byte UTF-8 characters (e.g. Arabic letters) — can be split across network
@@ -66,8 +71,10 @@ Events, always in this order:
      mid-stream.
 
 Before the stream starts, the backend may instead return a plain HTTP error (422
-invalid input, 502/503 embedding or database unavailable) with a JSON `{ "detail":
-string }` body — handled as a normal rejected request, not as SSE.
+invalid input, 429 cloud rate limit, 502/503 embedding or database unavailable) with
+a JSON `{ "detail": string }` body — handled as a normal rejected request, not as
+SSE. A 429, either as an HTTP status or as an `error` event with `status: 429`, shows
+a dedicated "rate limit reached" message with a Retry button.
 
 ## What was not verified against the live API
 

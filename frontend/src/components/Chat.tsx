@@ -20,9 +20,10 @@ export interface TurnViewModel {
 
 interface ChatProps {
   turns: TurnViewModel[];
+  onSwitchToCloud?: () => void;
 }
 
-export function Chat({ turns }: ChatProps) {
+export function Chat({ turns, onSwitchToCloud }: ChatProps) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -61,6 +62,7 @@ export function Chat({ turns }: ChatProps) {
                       finalResponse={turn.finalResponse}
                       isStreaming={turn.phase === "streaming"}
                       showWarmingUp={turn.showWarmingUp}
+                      onSwitchToCloud={onSwitchToCloud}
                     />
                   )}
                 </div>

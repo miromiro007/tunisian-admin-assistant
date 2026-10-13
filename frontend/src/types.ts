@@ -7,10 +7,13 @@ export type RefusalReason =
   | "empty_answer"
   | null;
 
+export type Provider = "ollama" | "groq";
+
 export interface AskRequest {
   question: string;
   top_k?: number;
   language?: Language;
+  provider?: Provider;
 }
 
 export interface Source {

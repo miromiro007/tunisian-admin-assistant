@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BookOpen, ChevronDown, Clock, Cpu, Loader2 } from "lucide-react";
+import { BookOpen, ChevronDown, Clock, Cpu, Loader2, ShieldAlert } from "lucide-react";
 import { buildValidCitationNumbers, parseCitationMarkers } from "../lib/citations";
 import { CitationChip } from "./CitationChip";
 import { SourceCard } from "./SourceCard";
@@ -17,6 +17,7 @@ interface MessageAnswerProps {
   finalResponse: AskResponse | null;
   isStreaming: boolean;
   showWarmingUp: boolean;
+  onSwitchToCloud?: () => void;
 }
 
 export function MessageAnswer({
@@ -26,6 +27,7 @@ export function MessageAnswer({
   finalResponse,
   isStreaming,
   showWarmingUp,
+  onSwitchToCloud,
 }: MessageAnswerProps) {
   const { t } = useLang();
   const [showOthers, setShowOthers] = useState(false);
@@ -66,31 +68,53 @@ export function MessageAnswer({
   }
 
   if (isStreaming && text.length === 0 && sources.length === 0) {
-    return <Skeleton label={t("answer.searching")} />;
+    return (
+      <div aria-live="polite">
+        <Skeleton label={t("answer.searching")} />
+      </div>
+    );
   }
 
+  // Sources are in but no token yet: either the model is still thinking, or the provider
+  // (e.g. Groq) returns the whole answer at once in `done` without streaming tokens.
+  const awaitingText = isStreaming && !finalResponse && text.length === 0;
+
   return (
-    <div className="flex flex-col gap-5">
-      {finalResponse?.refused ? (
-        <RefusalCard reason={finalResponse.refusal_reason} />
-      ) : (
-        <p
-          className="bidi-plaintext whitespace-pre-wrap pt-1 text-[0.95rem] leading-7 text-(--color-text)"
-          dir="auto"
-          aria-live="polite"
-        >
-          {segments.map((segment, i) =>
-            segment.kind === "text" ? (
-              <span key={i}>{segment.value}</span>
-            ) : segment.valid ? (
-              <CitationChip key={i} number={segment.number} onClick={() => handleCitationClick(segment.number)} />
+    <div className="flex flex-col gap-4">
+      <div aria-live="polite">
+        {finalResponse?.refused ? (
+          <RefusalCard reason={finalResponse.refusal_reason} onSwitchToCloud={onSwitchToCloud} />
+        ) : (
+          <div className="rounded-2xl border border-(--color-border) bg-(--color-surface) px-4 py-3.5 shadow-soft sm:px-5 sm:py-4">
+            {awaitingText ? (
+              <Skeleton label={t("answer.writing")} />
             ) : (
-              <span key={i}>[{segment.number}]</span>
-            ),
-          )}
-          {isStreaming && !finalResponse && <Caret />}
-        </p>
-      )}
+              <p
+                className="bidi-plaintext max-w-[70ch] whitespace-pre-wrap text-[1.03rem] leading-[1.7] text-(--color-text)"
+                dir="auto"
+              >
+                {segments.map((segment, i) =>
+                  segment.kind === "text" ? (
+                    <span key={i}>{segment.value}</span>
+                  ) : segment.valid ? (
+                    <CitationChip key={i} number={segment.number} onClick={() => handleCitationClick(segment.number)} />
+                  ) : (
+                    <span key={i}>[{segment.number}]</span>
+                  ),
+                )}
+                {isStreaming && !finalResponse && <Caret />}
+              </p>
+            )}
+
+            {finalResponse && (
+              <p className="mt-3.5 flex items-start gap-1.5 border-t border-(--color-border) pt-3 text-xs leading-snug text-(--color-text-muted)">
+                <ShieldAlert size={13} aria-hidden="true" className="mt-px shrink-0" />
+                {t("answer.verifyReminder")}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {sources.length > 0 && (
         <section className="flex flex-col gap-2.5" aria-label={t("sources.title")}>
@@ -180,7 +204,7 @@ function Caret() {
 function Skeleton({ label }: { label: string }) {
   return (
     <div className="flex flex-col gap-3 pt-1.5">
-      <p aria-live="polite" className="text-xs text-(--color-text-muted)">
+      <p className="text-xs text-(--color-text-muted)">
         {label}
       </p>
       <div className="flex flex-col gap-2.5" aria-hidden="true">

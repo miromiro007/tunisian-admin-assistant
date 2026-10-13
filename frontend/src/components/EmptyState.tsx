@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, MessageCircleQuestion } from "lucide-react";
 import { BrandMark } from "./BrandMark";
 import { useLang } from "../i18n";
 
@@ -80,11 +80,17 @@ function ExampleGroup({
               onClick={() => onPick(question)}
               className="group flex w-full items-start gap-3 rounded-xl border border-(--color-border) bg-(--color-surface) px-3.5 py-3 text-start text-sm leading-snug text-(--color-text) shadow-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-300 hover:shadow-lift focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 dark:hover:border-accent-700"
             >
-              <span className="flex-1">{question}</span>
+              <span
+                aria-hidden="true"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-700 ring-1 ring-inset ring-accent-100 transition-colors group-hover:bg-accent-100 dark:bg-accent-800/40 dark:text-accent-300 dark:ring-accent-800"
+              >
+                <MessageCircleQuestion size={15} />
+              </span>
+              <span className="flex-1 pt-0.5">{question}</span>
               <ArrowUpRight
                 size={16}
                 aria-hidden="true"
-                className="mt-0.5 shrink-0 text-(--color-text-muted) opacity-0 transition-all group-hover:text-accent-600 group-hover:opacity-100 group-focus-visible:opacity-100 rtl:-scale-x-100 dark:group-hover:text-accent-300"
+                className="mt-1 shrink-0 text-(--color-text-muted) opacity-0 transition-all group-hover:text-accent-600 group-hover:opacity-100 group-focus-visible:opacity-100 rtl:-scale-x-100 dark:group-hover:text-accent-300"
               />
             </button>
           </li>
