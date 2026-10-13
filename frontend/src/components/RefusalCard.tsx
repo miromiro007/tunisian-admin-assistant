@@ -12,7 +12,8 @@ export function RefusalCard({ reason, onSwitchToCloud }: RefusalCardProps) {
   const { t } = useLang();
   const reasonKey = reason ? `refusal.${reason}` : "refusal.no_sources";
   // Retrieval found nothing usable vs. the model itself failing to produce an answer.
-  const titleKey = reason === "model_declined" || reason === "empty_answer" ? "refusal.titleModel" : "refusal.title";
+  const modelFailed = reason === "model_declined" || reason === "empty_answer";
+  const titleKey = modelFailed ? "refusal.titleModel" : "refusal.title";
   const offerCloud = reason === "model_declined" && onSwitchToCloud !== undefined;
 
   return (
@@ -24,6 +25,9 @@ export function RefusalCard({ reason, onSwitchToCloud }: RefusalCardProps) {
       <div className="min-w-0 pt-0.5">
         <p className="text-[0.95rem] font-semibold text-(--color-text)">{t(titleKey)}</p>
         <p className="mt-1 text-sm leading-relaxed text-(--color-text-muted)">{t(reasonKey)}</p>
+        {!modelFailed && (
+          <p className="mt-1.5 text-xs leading-relaxed text-(--color-text-muted)">{t("docs.dates")}</p>
+        )}
         {offerCloud && (
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
             <p className="text-sm text-(--color-text-muted)">{t("refusal.switchHint")}</p>

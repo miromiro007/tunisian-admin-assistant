@@ -83,7 +83,11 @@ export function MessageAnswer({
     <div className="flex flex-col gap-4">
       <div aria-live="polite">
         {finalResponse?.refused ? (
-          <RefusalCard reason={finalResponse.refusal_reason} onSwitchToCloud={onSwitchToCloud} />
+          <RefusalCard
+            reason={finalResponse.refusal_reason}
+            // Only suggest Cloud when THIS turn was answered by the local model.
+            onSwitchToCloud={finalResponse.provider === "ollama" ? onSwitchToCloud : undefined}
+          />
         ) : (
           <div className="rounded-2xl border border-(--color-border) bg-(--color-surface) px-4 py-3.5 shadow-soft sm:px-5 sm:py-4">
             {awaitingText ? (
@@ -109,7 +113,9 @@ export function MessageAnswer({
             {finalResponse && (
               <p className="mt-3.5 flex items-start gap-1.5 border-t border-(--color-border) pt-3 text-xs leading-snug text-(--color-text-muted)">
                 <ShieldAlert size={13} aria-hidden="true" className="mt-px shrink-0" />
-                {t("answer.verifyReminder")}
+                <span>
+                  {t("answer.verifyReminder")} {t("docs.dates")}
+                </span>
               </p>
             )}
           </div>
