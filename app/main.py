@@ -140,7 +140,7 @@ def _to_source(source, cited: bool) -> SourceResponse:
         page=hit.page,
         language=hit.language,
         score=hit.score,
-        excerpt=" ".join(hit.content.split())[:300],
+        excerpt=" ".join(hit.content.split())[:1500],
         cited=cited,
     )
 
