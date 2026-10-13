@@ -21,3 +21,6 @@ def test_curly_apostrophe_matches_straight_one() -> None:
 
 def test_arabic_diacritics_are_ignored() -> None:
     assert first_hit_rank(["ثلاثون يوماً"], ["ثلاثون يوما"]) == 1
+
+def test_arabic_prefix_does_not_hide_the_keyword() -> None:
+    assert first_hit_rank(["مدة للتجربة هي ثلاثون يوماً"], ["تجربة", "ثلاثون يوما|ثلاثين يوما"]) == 1    
